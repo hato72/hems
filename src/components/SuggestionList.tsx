@@ -11,7 +11,7 @@ export const SuggestionList: React.FC<Props> = ({ suggestions }) => {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold flex items-center">
         <Lightbulb className="w-6 h-6 mr-2 text-yellow-500" />
-        Energy Saving Suggestions
+        エネルギー節約の提案
       </h2>
       <div className="space-y-3">
         {suggestions.map((suggestion) => (
@@ -19,7 +19,7 @@ export const SuggestionList: React.FC<Props> = ({ suggestions }) => {
             <h3 className="font-semibold text-lg mb-1">{suggestion.title}</h3>
             <p className="text-gray-600 mb-2">{suggestion.description}</p>
             <div className="text-green-600 font-medium">
-              Potential Savings: ¥{suggestion.savingPotential.toFixed(2)}/month
+              潜在的な節約: ¥{suggestion.savingPotential.toFixed(2)}/月
             </div>
           </div>
         ))}

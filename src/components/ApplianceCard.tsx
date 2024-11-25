@@ -18,7 +18,7 @@ export const ApplianceCard: React.FC<Props> = ({ appliance, onToggle }) => {
             appliance.isOn ? 'bg-green-500 text-white' : 'bg-gray-300'
           }`}
         >
-          {appliance.isOn ? 'ON' : 'OFF'}
+          {appliance.isOn ? 'オン' : 'オフ'}
         </button>
       </div>
       <div className="space-y-2">
