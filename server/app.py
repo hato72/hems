@@ -24,7 +24,7 @@ UPDATE_INTERVAL = 5  # seconds
 
 # Excelファイルからデータを読み込む
 try:
-    df = pd.read_excel('../hec_40.xlsx')
+    df = pd.read_excel('./hec_40.xlsx')
     appliance_data = {}
     
     # time列以外のカラム名を取得
@@ -123,3 +123,4 @@ if __name__ == '__main__':
     update_thread.start()
     
     socketio.run(app, debug=True, port=5000)
+    #socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
