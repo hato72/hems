@@ -32,8 +32,8 @@ export const EnergyDashboard: React.FC<Props> = ({ data, totalPower, totalCost }
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis yAxisId="left" orientation="left" stroke="#2563eb" />
-            <YAxis yAxisId="right" orientation="right" stroke="#16a34a" />
+            <YAxis yAxisId="left" orientation="left" stroke="#2563eb" dataKey="power" name="電力 (kWh)" unit=" kWh"/>
+            <YAxis yAxisId="right" orientation="right" stroke="#16a34a" dataKey="cost" name="コスト (¥)" unit=" ¥"/>
             <Tooltip />
             <Line yAxisId="left" type="monotone" dataKey="power" stroke="#2563eb" name="電力 (kWh)" />
             <Line yAxisId="right" type="monotone" dataKey="cost" stroke="#16a34a" name="コスト (¥)" />
