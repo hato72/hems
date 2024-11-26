@@ -24,7 +24,7 @@ UPDATE_INTERVAL = 5  # seconds
 
 # Excelファイルからデータを読み込む
 try:
-    df = pd.read_excel('./hec_40.xlsx')
+    df = pd.read_excel('./server/hec_40.xlsx')
     appliance_data = {}
     
     # time列以外のカラム名を取得
