@@ -13,18 +13,35 @@ function App() {
 
   useEffect(() => {
     socket.on('appliance_update', (data: ApplianceData[]) => {
-      setAppliances(data);
+      //setAppliances(data);
+
+      const currentAppliances = appliances.reduce((acc, curr) => { // 現在のAppliancesの状態を取得
+        acc[curr.id] = curr;
+        return acc;
+      }, {} as { [key: string]: ApplianceData });
+
+      // 新しいデータでAppliancesの状態を更新
+      const updatedAppliances = data.map((appliance) => {
+        const currentAppliance = currentAppliances[appliance.id] || appliance;
+        return {
+          ...appliance,
+          power: (currentAppliance.power || 0) + appliance.power,
+          cost: (currentAppliance.cost || 0) + appliance.cost,
+        };
+      });
+
+      setAppliances(updatedAppliances);
     });
 
     // クリーンアップ処理
     return () => {
       socket.off('appliance_update');
     };
-  }, []);
+  }, [appliances]);
 
-  const handleToggle = (id: string) => {
-    socket.emit('toggle_appliance', { id });
-  };
+  // const handleToggle = (id: string) => {
+  //   socket.emit('toggle_appliance', { id });
+  // };
 
   // appliancesの合計値を計算
   const totalPower = appliances.reduce((sum, app) => sum + app.power, 0);
@@ -36,7 +53,7 @@ function App() {
         <EnergyDashboard data={appliances} totalPower={totalPower} totalCost={totalCost} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {appliances.map((appliance) => (
-            <ApplianceCard key={appliance.id} appliance={appliance} onToggle={handleToggle} />
+            <ApplianceCard key={appliance.id} appliance={appliance} />
           ))}
         </div>
       </div>
