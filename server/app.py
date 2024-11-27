@@ -69,7 +69,6 @@ def update_power_usage():
     """Update power usage for all active appliances."""
     total_power = {appliance_id: 0 for appliance_id in appliances}
     total_cost = {appliance_id: 0 for appliance_id in appliances}
-
     for i in range(40):  # 40秒間データを送信
         updated_appliances = []
         for appliance_id, appliance in appliances.items():
@@ -80,20 +79,27 @@ def update_power_usage():
                     cost_increment = appliance_data[appliance_name]['料金'][i]
                     total_power[appliance_id] += power_increment
                     total_cost[appliance_id] += cost_increment
-                    appliance['power'] = total_power[appliance_id] # 合計値を代入
+                    #appliance['power'] = total_power[appliance_id] # 合計値を代入
                     appliance['cost'] = total_cost[appliance_id] # 合計値を代入
-                    # appliance['power'] = appliance_data[appliance_name]['消費電力'][i]
+                    appliance['power'] = appliance_data[appliance_name]['消費電力'][i]
                     # appliance['cost'] = appliance_data[appliance_name]['料金'][i] # 料金もExcelから取得
                 except IndexError:
                     # データが足りない場合は0を設定
-                    # appliance['power'] = 0
+                    appliance['power'] = 0
                     # appliance['cost'] = 0
-                    appliance['power'] = total_power[appliance_id]
+                    #appliance['power'] = total_power[appliance_id]
                     appliance['cost'] = total_cost[appliance_id]
             updated_appliances.append(appliance)
 
         socketio.emit('appliance_update', updated_appliances)
         time.sleep(1)
+
+    # 40回送信後、消費電力を0にする
+    # for appliance in appliances.values():
+    #     appliance['power'] = 0
+    # socketio.emit('appliance_update', list(appliances.values()))
+    
+    
     # while True:
     #     total_power = 0
     #     for appliance_id, appliance in appliances.items():

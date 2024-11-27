@@ -24,8 +24,10 @@ function App() {
       const updatedAppliances = data.map((appliance) => {
         const currentAppliance = currentAppliances[appliance.id] || appliance;
         return {
+          //...currentAppliance,
           ...appliance,
-          power: (currentAppliance.power || 0) + appliance.power,
+          //power: (currentAppliance.power || 0) + appliance.power,
+          power: appliance.power,
           cost: (currentAppliance.cost || 0) + appliance.cost,
         };
       });
