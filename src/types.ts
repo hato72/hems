@@ -3,7 +3,6 @@ export interface ApplianceData {
   name: string;
   location: string;
   power: number;
-  isOn: boolean;
   cost: number;
 }
 
