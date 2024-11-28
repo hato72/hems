@@ -9,15 +9,16 @@ interface Props {
 }
 
 export const EnergyDashboard: React.FC<Props> = ({ data, totalPower, totalCost }) => {
-  // const chartData = data.map(item => ({
-  //   name: item.name,
-  //   power: item.power,
-  //   cost: item.cost
-  // }));
 
   const maxPower = 0.0001; // 電力の最大値 (kWh)
-  const maxCost = 5;  // コストの最大値 (¥)
+  const maxCost = 700;  // コストの最大値 (¥)
+  const targetCost = 445; //一日の目標コスト
 
+  //const targetCostData = { name: '目標', cost: targetCost };
+  const totalCostData = { name: '累計', cost: totalCost };
+
+  // アラート表示のフラグ
+  const showAlert = totalCost > targetCost;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -31,19 +32,26 @@ export const EnergyDashboard: React.FC<Props> = ({ data, totalPower, totalCost }
           <p className="text-2xl font-bold text-blue-600">{totalPower.toFixed(2)} kWh</p>
         </div>
       </div>
-      {/* <div className="h-64">
+      {showAlert && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+          <strong className="font-bold">アラート:</strong>
+          <span className="block sm:inline"> 累計コストが目標金額を超過しました！</span>
+        </div>
+      )}
+
+      <div className="h-64 mt-4">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
+          <BarChart data={[totalCostData, { name: '目標', target: targetCost }]}> {/* データを修正 */}
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis yAxisId="left" orientation="left" stroke="#2563eb" dataKey="power" name="電力 (kWh)" unit=" kWh"/>
-            <YAxis yAxisId="right" orientation="right" stroke="#16a34a" dataKey="cost" name="コスト (¥)" unit=" ¥"/>
+            <YAxis domain={[0, maxCost]} name="コスト (¥)" unit=" ¥" />
             <Tooltip />
-            <Line yAxisId="left" type="monotone" dataKey="power" stroke="#2563eb" name="電力 (kWh)" />
-            <Line yAxisId="right" type="monotone" dataKey="cost" stroke="#16a34a" name="コスト (¥)" />
-          </LineChart>
+            <Legend />
+            <Bar dataKey="cost" name="累積コスト" fill="#16a34a" />
+            <Bar dataKey="target" name="目標金額" fill="red" /> {/* dataKey を target に変更 */}
+          </BarChart>
         </ResponsiveContainer>
-      </div> */}
+      </div>
       <div className="grid grid-cols-2 gap-4"> {/* グラフを2つ並べる */}
         <div className="h-64"> {/* コストのグラフ */}
           <ResponsiveContainer width="100%" height="100%">

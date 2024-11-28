@@ -38,7 +38,7 @@ try:
         if appliance_name not in appliance_data:
             appliance_data[appliance_name] = {}
 
-        appliance_data[appliance_name][data_type] = df[col].tolist()[1:41] # 1秒後〜40秒後のデータを取得
+        appliance_data[appliance_name][data_type] = df[col].tolist()[1:] 
 
 except FileNotFoundError:
     print("Error: hec_40.xlsx not found.")
@@ -69,35 +69,35 @@ def update_power_usage():
     """Update power usage for all active appliances."""
     total_power = {appliance_id: 0 for appliance_id in appliances}
     total_cost = {appliance_id: 0 for appliance_id in appliances}
-    for i in range(40):  # 40秒間データを送信
+    # for i in range(40): 
+    time_data_length = len(df['time']) -1 # ヘッダー行を除外
+    for i in range(time_data_length):
         updated_appliances = []
         for appliance_id, appliance in appliances.items():
             appliance_name = appliance['name']
             if appliance_name in appliance_data:
                 try:
-                    power_increment = appliance_data[appliance_name]['消費電力'][i]
-                    cost_increment = appliance_data[appliance_name]['料金'][i]
-                    total_power[appliance_id] += power_increment
-                    total_cost[appliance_id] += cost_increment
+                    #power_increment = appliance_data[appliance_name]['消費電力'][i]
+                    #cost_increment = appliance_data[appliance_name]['料金'][i]
+                    #total_power[appliance_id] += power_increment
+                    #total_cost[appliance_id] += cost_increment
                     #appliance['power'] = total_power[appliance_id] # 合計値を代入
-                    appliance['cost'] = total_cost[appliance_id] # 合計値を代入
+                    #appliance['cost'] = total_cost[appliance_id] # 合計値を代入
                     appliance['power'] = appliance_data[appliance_name]['消費電力'][i]
-                    # appliance['cost'] = appliance_data[appliance_name]['料金'][i] # 料金もExcelから取得
+                    appliance['cost'] = appliance_data[appliance_name]['料金'][i] # 累計コストをそのまま設定
                 except IndexError:
-                    # データが足りない場合は0を設定
                     appliance['power'] = 0
                     # appliance['cost'] = 0
                     #appliance['power'] = total_power[appliance_id]
-                    appliance['cost'] = total_cost[appliance_id]
+                    #appliance['cost'] = total_cost[appliance_id]
             updated_appliances.append(appliance)
-
         socketio.emit('appliance_update', updated_appliances)
         time.sleep(1)
 
     # 40回送信後、消費電力を0にする
-    # for appliance in appliances.values():
-    #     appliance['power'] = 0
-    # socketio.emit('appliance_update', list(appliances.values()))
+    for appliance in appliances.values():
+        appliance['power'] = 0
+    socketio.emit('appliance_update', list(appliances.values()))
     
     
     # while True:
