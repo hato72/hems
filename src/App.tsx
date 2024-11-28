@@ -11,6 +11,9 @@ const socket = io(BACKEND_URL);
 function App() {
   const [appliances, setAppliances] = useState<ApplianceData[]>([]);
 
+  const [zeroPowerDuration, setZeroPowerDuration] = useState(0); // 消費電力量が0の状態が継続している時間 (秒)
+  const [showZeroPowerAlert, setShowZeroPowerAlert] = useState(false); // 消費電力量0アラート表示フラグ
+
   useEffect(() => {
     socket.on('appliance_update', (data: ApplianceData[]) => {
       //setAppliances(data);
@@ -31,19 +34,38 @@ function App() {
           cost: (currentAppliance.cost || 0) + appliance.cost,
         };
       });
-
+      
       setAppliances(updatedAppliances);
     });
 
     // クリーンアップ処理
-    return () => {
-      socket.off('appliance_update');
-    };
+    // return () => {
+    //   socket.off('appliance_update');
+    // };
+    // 1秒ごとに実行
+    const intervalId = setInterval(() => {
+      // 全ての家電の消費電力が0かどうかをチェック
+      const allPowerZero = appliances.every((appliance) => appliance.power === 0);
+
+      if (allPowerZero) {
+        setZeroPowerDuration((prevDuration) => prevDuration + 1); // 継続時間を1秒増やす
+      } else {
+        setZeroPowerDuration(0); // 0でない場合は継続時間をリセット
+      }
+    }, 1000);
+
+    // クリーンアップ関数
+    return () => clearInterval(intervalId);
   }, [appliances]);
 
-  // const handleToggle = (id: string) => {
-  //   socket.emit('toggle_appliance', { id });
-  // };
+  useEffect(() => {
+    // zeroPowerDuration が 30秒以上になったらアラートを表示
+    if (zeroPowerDuration >= 30) {
+      setShowZeroPowerAlert(true);
+    } else {
+      setShowZeroPowerAlert(false);
+    }
+  }, [zeroPowerDuration]);
 
   // appliancesの合計値を計算
   const totalPower = appliances.reduce((sum, app) => sum + app.power, 0);
@@ -52,6 +74,12 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {showZeroPowerAlert && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mt-4" role="alert">
+            <strong className="font-bold">アラート:</strong>
+            <span className="block sm:inline"> 消費電力量が0の状態が30秒以上続いています。</span>
+          </div>
+        )}
         <EnergyDashboard data={appliances} totalPower={totalPower} totalCost={totalCost} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {appliances.map((appliance) => (
