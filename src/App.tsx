@@ -100,7 +100,7 @@ function App() {
       setDifyResponse(result.result);
     } catch (error) {
       console.error('Failed to send data to backend:', error);
-      setDifyResponse('バックエンドとの通信に失敗しました。');
+      //setDifyResponse('バックエンドとの通信に失敗しました。');
     }
   };
 
