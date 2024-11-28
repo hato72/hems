@@ -14,6 +14,11 @@ function App() {
   const [zeroPowerDuration, setZeroPowerDuration] = useState(0); // 消費電力量が0の状態が継続している時間 (秒)
   const [showZeroPowerAlert, setShowZeroPowerAlert] = useState(false); // 消費電力量0アラート表示フラグ
 
+  const [difyResponse, setDifyResponse] = useState<string | null>(null); // difyResponseの状態変数を追加
+
+  const [showAlertTriggered, setShowAlertTriggered] = useState(false);
+
+
   useEffect(() => {
     socket.on('appliance_update', (data: ApplianceData[]) => {
       //setAppliances(data);
@@ -36,13 +41,19 @@ function App() {
       });
       
       setAppliances(updatedAppliances);
+
+      // updatedAppliancesのどれかのpowerが0より大きければアラートを非表示にする
+      if (updatedAppliances.some(appliance => appliance.power > 0)) {
+        setZeroPowerDuration(0);
+        setShowZeroPowerAlert(false);
+      }
     });
 
     // クリーンアップ処理
     // return () => {
     //   socket.off('appliance_update');
     // };
-    // 1秒ごとに実行
+
     const intervalId = setInterval(() => {
       // 全ての家電の消費電力が0かどうかをチェック
       const allPowerZero = appliances.every((appliance) => appliance.power === 0);
@@ -71,6 +82,28 @@ function App() {
   const totalPower = appliances.reduce((sum, app) => sum + app.power, 0);
   const totalCost = appliances.reduce((sum, app) => sum + app.cost, 0);
 
+  const sendDataToBackend = async (appliancesData: ApplianceData[]) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/send_data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ appliances: appliancesData.map(appliance => ({name: appliance.name, cost: appliance.cost})) }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setDifyResponse(result.result);
+    } catch (error) {
+      console.error('Failed to send data to backend:', error);
+      setDifyResponse('バックエンドとの通信に失敗しました。');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -80,7 +113,7 @@ function App() {
             <span className="block sm:inline"> 消費電力量が0の状態が30秒以上続いています。</span>
           </div>
         )}
-        <EnergyDashboard data={appliances} totalPower={totalPower} totalCost={totalCost} />
+        <EnergyDashboard data={appliances} totalPower={totalPower} totalCost={totalCost} onAlertTriggered={sendDataToBackend} difyResponse={difyResponse}/>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {appliances.map((appliance) => (
             <ApplianceCard key={appliance.id} appliance={appliance} />
@@ -92,232 +125,3 @@ function App() {
 }
 
 export default App;
-
-
-// import React, { useState, useEffect } from 'react';
-// import { io } from 'socket.io-client';
-// import { ApplianceCard } from './components/ApplianceCard';
-// import { EnergyDashboard } from './components/EnergyDashboard';
-// import { SuggestionList } from './components/SuggestionList';
-// import { ApplianceData, Suggestion } from './types';
-// import { AlertTriangle } from 'lucide-react';
-
-// const BACKEND_URL = 'http://localhost:5000';
-// const socket = io(BACKEND_URL);
-
-// function App() {
-//   const [appliances, setAppliances] = useState<ApplianceData[]>([]);
-//   const [showAlert, setShowAlert] = useState(false);
-//   const [alertMessage, setAlertMessage] = useState('');
-//   const [totalPower, setTotalPower] = useState(0);
-//   const [totalCost, setTotalCost] = useState(0);
-
-//   const suggestions: Suggestion[] = [
-//     {
-//       id: '1',
-//       title: 'エアコンの使用をまとめる',
-//       description: '複数のエアコンを使う代わりに、リビングルームに集まって1台のエアコンを使用することを検討してください。',
-//       savingPotential: 3000,
-//     },
-//     {
-//       id: '2',
-//       title: '代替暖房を使用する',
-//       description: '一人用の場合、エアコンの代わりに電気毛布を使用することを検討してください。',
-//       savingPotential: 2000,
-//     },
-//   ];
-
-//   useEffect(() => {
-//     const fetchData = () => {
-//       fetch(`${BACKEND_URL}/api/appliances`)
-//         .then(response => response.json())
-//         .then(data => {
-//           setAppliances(data);
-//           const newTotalPower = data.reduce((sum, app) => sum + app.power, 0);
-//           const newTotalCost = data.reduce((sum, app) => sum + app.cost, 0);
-//           setTotalPower(newTotalPower);
-//           setTotalCost(newTotalCost);
-//         })
-//         .catch(error => console.error('家電データの取得エラー:', error));
-//     };
-
-//     fetchData(); // 初回データ取得
-
-//     const intervalId = setInterval(fetchData, 1000); // 1秒ごとにデータ取得
-
-//     // リアルタイム更新をリッスン
-//     socket.on('appliance_update', (data: ApplianceData[]) => {
-//       setAppliances(data);
-//       const newTotalPower = data.reduce((sum, app) => sum + app.power, 0);
-//       const newTotalCost = data.reduce((sum, app) => sum + app.cost, 0);
-//       setTotalPower(newTotalPower);
-//       setTotalCost(newTotalCost);
-//     });
-
-//     // 電力アラートをリッスン
-//     socket.on('power_alert', (data: { message: string }) => {
-//       setShowAlert(true);
-//       setAlertMessage(data.message);
-//     });
-
-//     return () => {
-//       clearInterval(intervalId); // インターバルをクリーンアップ
-//       socket.off('appliance_update');
-//       socket.off('power_alert');
-//     };
-//   }, []);
-
-//   const handleToggle = (id: string) => {
-//     socket.emit('toggle_appliance', { id });
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-6">
-//       <div className="max-w-6xl mx-auto space-y-6">
-//         <h1 className="text-3xl font-bold text-gray-800">家庭エネルギーモニター</h1>
-        
-//         {showAlert && (
-//           <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-4 rounded">
-//             <div className="flex items-center">
-//               <AlertTriangle className="w-6 h-6 text-red-500 mr-2" />
-//               <p className="text-red-700">{alertMessage}</p>
-//             </div>
-//           </div>
-//         )}
-
-//         <EnergyDashboard 
-//           data={appliances}
-//           totalPower={totalPower}
-//           totalCost={totalCost}
-//         />
-
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//           <div className="space-y-4">
-//             <h2 className="text-xl font-semibold">アクティブな家電</h2>
-//             <div className="grid grid-cols-1 gap-4">
-//               {appliances.map(appliance => (
-//                 <ApplianceCard
-//                   key={appliance.id}
-//                   appliance={appliance}
-//                   onToggle={handleToggle}
-//                 />
-//               ))}
-//             </div>
-//           </div>
-          
-//           <SuggestionList suggestions={suggestions} />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default App;
-
-// // import React, { useState, useEffect } from 'react';
-// // import { io } from 'socket.io-client';
-// // import { ApplianceCard } from './components/ApplianceCard';
-// // import { EnergyDashboard } from './components/EnergyDashboard';
-// // import { SuggestionList } from './components/SuggestionList';
-// // import { ApplianceData, Suggestion } from './types';
-// // import { AlertTriangle } from 'lucide-react';
-
-// // const BACKEND_URL = 'http://localhost:5000';
-// // const socket = io(BACKEND_URL);
-
-// // function App() {
-// //   const [appliances, setAppliances] = useState<ApplianceData[]>([]);
-// //   const [showAlert, setShowAlert] = useState(false);
-// //   const [alertMessage, setAlertMessage] = useState('');
-// //   const [totalPower, setTotalPower] = useState(0);
-// //   const [totalCost, setTotalCost] = useState(0);
-
-// //   const suggestions: Suggestion[] = [
-// //     {
-// //       id: '1',
-// //       title: 'エアコンの使用をまとめる',
-// //       description: '複数のエアコンを使う代わりに、リビングルームに集まって1台のエアコンを使用することを検討してください。',
-// //       savingPotential: 3000,
-// //     },
-// //     {
-// //       id: '2',
-// //       title: '代替暖房を使用する',
-// //       description: '一人用の場合、エアコンの代わりに電気毛布を使用することを検討してください。',
-// //       savingPotential: 2000,
-// //     },
-// //   ];
-
-// //   useEffect(() => {
-// //     // 初期の家電データを取得
-// //     fetch(`${BACKEND_URL}/api/appliances`)
-// //       .then(response => response.json())
-// //       .then(data => setAppliances(data))
-// //       .catch(error => console.error('家電データの取得エラー:', error));
-
-// //     // リアルタイム更新をリッスン
-// //     socket.on('appliance_update', (data: ApplianceData[]) => {
-// //       setAppliances(data);
-// //       const newTotalPower = data.reduce((sum, app) => sum + app.power, 0);
-// //       const newTotalCost = data.reduce((sum, app) => sum + app.cost, 0);
-// //       setTotalPower(newTotalPower);
-// //       setTotalCost(newTotalCost);
-// //     });
-
-// //     // 電力アラートをリッスン
-// //     socket.on('power_alert', (data: { message: string }) => {
-// //       setShowAlert(true);
-// //       setAlertMessage(data.message);
-// //     });
-
-// //     return () => {
-// //       socket.off('appliance_update');
-// //       socket.off('power_alert');
-// //     };
-// //   }, []);
-
-// //   const handleToggle = (id: string) => {
-// //     socket.emit('toggle_appliance', { id });
-// //   };
-
-// //   return (
-// //     <div className="min-h-screen bg-gray-100 p-6">
-// //       <div className="max-w-6xl mx-auto space-y-6">
-// //         <h1 className="text-3xl font-bold text-gray-800">家庭エネルギーモニター</h1>
-        
-// //         {showAlert && (
-// //           <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-4 rounded">
-// //             <div className="flex items-center">
-// //               <AlertTriangle className="w-6 h-6 text-red-500 mr-2" />
-// //               <p className="text-red-700">{alertMessage}</p>
-// //             </div>
-// //           </div>
-// //         )}
-
-// //         <EnergyDashboard 
-// //           data={appliances}
-// //           totalPower={totalPower}
-// //           totalCost={totalCost}
-// //         />
-
-// //         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-// //           <div className="space-y-4">
-// //             <h2 className="text-xl font-semibold">アクティブな家電</h2>
-// //             <div className="grid grid-cols-1 gap-4">
-// //               {appliances.map(appliance => (
-// //                 <ApplianceCard
-// //                   key={appliance.id}
-// //                   appliance={appliance}
-// //                   onToggle={handleToggle}
-// //                 />
-// //               ))}
-// //             </div>
-// //           </div>
-          
-// //           <SuggestionList suggestions={suggestions} />
-// //         </div>
-// //       </div>
-// //     </div>
-// //   );
-// // }
-
-// // export default App;
