@@ -65,10 +65,11 @@ for i, appliance_name in enumerate(appliance_data.keys()):
 #     'IH Cooktop': 50,
 # }
 
+# 家電のゼロコスト状態を記録する辞書
+zero_cost_tracker = {appliance_id: 0 for appliance_id in appliances}
+
 def update_power_usage():
     """Update power usage for all active appliances."""
-    total_power = {appliance_id: 0 for appliance_id in appliances}
-    total_cost = {appliance_id: 0 for appliance_id in appliances}
     for i in range(40):  # 40秒間データを送信
         updated_appliances = []
         for appliance_id, appliance in appliances.items():
@@ -77,20 +78,31 @@ def update_power_usage():
                 try:
                     power_increment = appliance_data[appliance_name]['消費電力'][i]
                     cost_increment = appliance_data[appliance_name]['料金'][i]
-                    total_power[appliance_id] += power_increment
-                    total_cost[appliance_id] += cost_increment
-                    #appliance['power'] = total_power[appliance_id] # 合計値を代入
-                    appliance['cost'] = total_cost[appliance_id] # 合計値を代入
-                    appliance['power'] = appliance_data[appliance_name]['消費電力'][i]
-                    # appliance['cost'] = appliance_data[appliance_name]['料金'][i] # 料金もExcelから取得
+
+                    # 更新
+                    appliance['power'] = power_increment
+                    appliance['cost'] = cost_increment
+
+                    # ゼロコスト状態の追跡
+                    if cost_increment == 0:
+                        zero_cost_tracker[appliance_id] += 1
+                        if zero_cost_tracker[appliance_id] >= 30:  # 30秒間ゼロ
+                            socketio.emit('zero_cost_alert', {
+                                'id': appliance_id,
+                                'name': appliance['name'],
+                                'message': f"{appliance['name']}の電気料金が30秒間ゼロです！"
+                            })
+                    else:
+                        zero_cost_tracker[appliance_id] = 0  # リセット
+
                 except IndexError:
-                    # データが足りない場合は0を設定
+                    # データが不足している場合
                     appliance['power'] = 0
-                    # appliance['cost'] = 0
-                    #appliance['power'] = total_power[appliance_id]
-                    appliance['cost'] = total_cost[appliance_id]
+                    appliance['cost'] = 0
+
             updated_appliances.append(appliance)
 
+        # クライアントに更新情報を送信
         socketio.emit('appliance_update', updated_appliances)
         time.sleep(1)
 
@@ -98,45 +110,26 @@ def update_power_usage():
     # for appliance in appliances.values():
     #     appliance['power'] = 0
     # socketio.emit('appliance_update', list(appliances.values()))
-    
-    
-    # while True:
-    #     total_power = 0
-    #     for appliance_id, appliance in appliances.items():
-    #         if appliance['isOn']:
-    #             appliance['power'] += POWER_INCREASE_RATE
-    #             appliance['cost'] = appliance['power'] * COST_PER_KWH
-    #             total_power += appliance['power']
-        
-    #     # Emit updated data to all connected clients
-    #     socketio.emit('appliance_update', list(appliances.values()))
-        
-    #     # Check if total power exceeds threshold
-    #     if total_power > POWER_THRESHOLD:
-    #         socketio.emit('power_alert', {
-    #             'message': f'High power consumption detected! Current usage: {total_power:.2f} kWh'
-    #         })
-        
-    #     time.sleep(UPDATE_INTERVAL)
 
 @app.route('/api/appliances')
 def get_appliances():
-    """Get current state of all appliances."""
+    """現在の家電データを取得するAPI"""
     return jsonify(list(appliances.values()))
 
 @socketio.on('toggle_appliance')
 def handle_toggle(data):
-    """Handle appliance toggle events."""
+    """クライアントからの家電操作リクエストを処理"""
     appliance_id = data['id']
     if appliance_id in appliances:
-        #appliances[appliance_id]['isOn'] = not appliances[appliance_id]['isOn']
+        # appliances[appliance_id]['isOn'] = not appliances[appliance_id]['isOn']
         socketio.emit('appliance_update', list(appliances.values()))
 
 if __name__ == '__main__':
-    # Start the background thread for updating power usage
+    # 消費電力の更新スレッドを開始
     update_thread = threading.Thread(target=update_power_usage)
     update_thread.daemon = True
     update_thread.start()
     
     socketio.run(app, debug=True, port=5000)
-    #socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
+    # socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
+
