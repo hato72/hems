@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Legend, Bar, LabelList } from 'recharts';
 import { ApplianceData } from '../types';
 
@@ -19,17 +19,20 @@ export const EnergyDashboard: React.FC<Props> = ({ data, totalPower, totalCost,o
   //const targetCostData = { name: '目標', cost: targetCost };
   const totalCostData = { name: '累計', cost: totalCost };
 
+  const [alertSent,setAlertSent] = useState(false);
+
   // アラート表示のフラグ
   const showAlert = totalCost > targetCost;
 
   useEffect(() => {
-    if (showAlert) {
+    if (showAlert && !alertSent) {
       onAlertTriggered(data);
+      setAlertSent(true);
     }
     if (showAlert && data.some(item => item.power > 0)) {
       //追加
     }
-  }, [showAlert, data, onAlertTriggered]);
+  }, [showAlert, data, onAlertTriggered,alertSent]);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -64,11 +67,11 @@ export const EnergyDashboard: React.FC<Props> = ({ data, totalPower, totalCost,o
                 <YAxis domain={[0, maxCost]} name="コスト" unit="円" />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="cost" name="累積コスト" fill="#16a34a">
-                  <LabelList dataKey="cost" position="top" formatter={(value) => value.toFixed(7)} />
+                <Bar dataKey="cost" name="累積コスト" fill="#16a34a" isAnimationActive={false}>
+                  <LabelList dataKey="cost" position="top" formatter={(value:number) => value.toFixed(7)} />
                 </Bar>
-                <Bar dataKey="target" name="目標金額" fill="red">
-                  <LabelList dataKey="target" position="top" formatter={(value) => value.toFixed(7)} />
+                <Bar dataKey="target" name="目標金額" fill="red" isAnimationActive={false}>
+                  <LabelList dataKey="target" position="top" formatter={(value:number) => value.toFixed(7)} />
                 </Bar> {/* dataKey を target に変更 */}
               </BarChart>
             </ResponsiveContainer>
@@ -84,7 +87,7 @@ export const EnergyDashboard: React.FC<Props> = ({ data, totalPower, totalCost,o
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="cost" name="累積コスト" fill="#16a34a">
-                  <LabelList dataKey="cost" position="top" formatter={(value) => value.toFixed(7)} />
+                  <LabelList dataKey="cost" position="top" formatter={(value:number) => value.toFixed(7)} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
