@@ -44,6 +44,8 @@ npm run dev
 仮想環境を立てた後
 ```sh
 pip install -r server/requirements.txt
+```
+```
 python server/app.py
 ```
 
