@@ -1,9 +1,12 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_socketio import SocketIO
 from flask_cors import CORS
 import threading
 import time
 import pandas as pd
+import os
+import json
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -57,13 +60,65 @@ for i, appliance_name in enumerate(appliance_data.keys()):
         'cost': 0
     }
 
-# 各家電の初期コストを設定 (例)
-# initial_costs = {
-#     'Living Room AC': 100,
-#     'Kids Room AC': 80,
-#     'Microwave': 20,
-#     'IH Cooktop': 50,
-# }
+# Dify APIの設定
+API_KEY = os.getenv("DIFY_API_KEY")  # 環境変数からAPIキーを取得
+BASE_URL = "https://api.dify.ai/v1"
+
+def run_workflow(inputs, response_mode, user):
+    """Dify APIを呼び出してワークフローを実行する"""
+    url = f"{BASE_URL}/workflows/run"  # chat-messages エンドポイントを使用
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "inputs": inputs,
+        "response_mode": response_mode,
+        "user": user,
+    }
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+    
+    if response.status_code == 200:
+        result = response.json()
+        # response_mode によって処理を分岐
+        if response_mode == "blocking":
+            if "data" in result and "outputs" in result["data"]:  # outputsの存在を確認
+                if "text" in result["data"]["outputs"]: # "text"キーの存在を確認
+                    return result["data"]["outputs"]["text"] # textキーの値を返す
+                else:
+                    return "APIからの応答に'text'キーが見つかりません。" # textキーがない場合のエラー処理
+
+            else:
+                return "APIからの応答が不正です。"  # data または outputs がない場合のエラー処理
+        else: # streamingの場合
+            return result #ストリーミングの場合はそのまま結果を返す
+
+    else:
+        return f"Request failed with status code {response.status_code}, {response.text}"
+
+@app.route('/api/send_data', methods=['POST'])  # 新しいエンドポイントを追加
+def send_data():
+    try:
+        data = request.get_json()
+        appliances_data = data.get('appliances')
+
+        if not appliances_data:
+            return jsonify({"error": "No appliances data provided"}), 400
+
+        text_description = "Appliance usage data:"
+        for appliance in appliances_data:
+            text_description += f"\n{appliance['name']}: cost - {appliance['cost']}"
+
+        inputs = {"input": text_description} #入力を変更
+        response_mode = "blocking" #blockingモードに変更
+        user = "example_user"
+
+        result = run_workflow(inputs, response_mode, user)
+        return jsonify({"result": result})
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid JSON data"}), 400
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
 def update_power_usage():
     """Update power usage for all active appliances."""
