@@ -55,7 +55,7 @@ for i, appliance_name in enumerate(appliance_data.keys()):
     appliances[str(i + 1)] = {
         'id': str(i + 1),
         'name': appliance_name,
-        'location': 'Location Placeholder',  # 適切な場所を設定してください
+        #'location': 'Location Placeholder',  # 適切な場所を設定してください
         'power': 0,
         'cost': 0
     }

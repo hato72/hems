@@ -1,9 +1,9 @@
 export interface ApplianceData {
   id: string;
   name: string;
-  location: string;
   power: number;
   cost: number;
+  //location: string;
 }
 
 export interface Suggestion {
