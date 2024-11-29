@@ -14,12 +14,12 @@ export const ApplianceCard: React.FC<Props> = ({ appliance }) => {
       </div>
       <div className="space-y-2">
         <div className="flex items-center text-gray-600">
-          <MapPin className="w-4 h-4 mr-2" />
-          <span>{appliance.location}</span>
+          {/* <MapPin className="w-4 h-4 mr-2" />
+          <span>{appliance.location}</span> */}
         </div>
         <div className="flex items-center text-gray-600">
           <Power className="w-4 h-4 mr-2" />
-          <span>{appliance.power.toFixed(2)} kWh</span>
+          <span>{appliance.power.toFixed(6)} kWh</span>
         </div>
         <div className="flex items-center text-gray-600">
           <DollarSign className="w-4 h-4 mr-2" />

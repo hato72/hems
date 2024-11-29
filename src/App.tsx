@@ -107,13 +107,13 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {showZeroPowerAlert && (
+        {/* {showZeroPowerAlert && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mt-4" role="alert">
             <strong className="font-bold">アラート:</strong>
             <span className="block sm:inline"> 消費電力量が0の状態が30秒以上続いています。</span>
           </div>
-        )}
-        <EnergyDashboard data={appliances} totalPower={totalPower} totalCost={totalCost} onAlertTriggered={sendDataToBackend} difyResponse={difyResponse}/>
+        )} */}
+        <EnergyDashboard data={appliances} totalPower={totalPower} totalCost={totalCost} onAlertTriggered={sendDataToBackend} difyResponse={difyResponse} showZeroPowerAlert={showZeroPowerAlert}/>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {appliances.map((appliance) => (
             <ApplianceCard key={appliance.id} appliance={appliance} />
